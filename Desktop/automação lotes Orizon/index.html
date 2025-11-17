@@ -3,68 +3,499 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAB - Sistema de Processamento</title>
-    <link rel="stylesheet" href="style.css">
+    <title>LAB - Sistema de Processamento XML</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f3f4f6;
+            min-height: 100vh;
+            color: #1a1d23;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #1a1d23;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .logo-blue {
+            color: #4A90E2;
+        }
+
+        .subtitle {
+            color: #4A90E2;
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .card-header h2 {
+            font-size: 1.75rem;
+            color: #1a1d23;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .description {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+
+        .upload-area {
+            border: 2px dashed #e5e7eb;
+            border-radius: 8px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            background: #f9fafb;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #4A90E2;
+            background: #eff6ff;
+        }
+
+        .upload-area.drag-over {
+            border-color: #4A90E2;
+            background: #eff6ff;
+            border-style: solid;
+        }
+
+        .upload-icon {
+            width: 56px;
+            height: 56px;
+            color: #4A90E2;
+            margin-bottom: 20px;
+            stroke-width: 2px;
+        }
+
+        .upload-area h3 {
+            color: #1a1d23;
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .upload-area p {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        .file-list {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .file-list.active {
+            display: block;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .file-icon {
+            width: 32px;
+            height: 32px;
+            color: #4A90E2;
+            margin-right: 15px;
+        }
+
+        .file-details h4 {
+            font-size: 1rem;
+            color: #1a1d23;
+            margin-bottom: 3px;
+        }
+
+        .file-details p {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .remove-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .remove-btn:hover {
+            background: #dc2626;
+        }
+
+        .action-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #4A90E2;
+            color: white;
+            box-shadow: 0 4px 6px rgba(74, 144, 226, 0.3);
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #3a7bc8;
+            box-shadow: 0 6px 8px rgba(74, 144, 226, 0.4);
+        }
+
+        .btn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .status-section {
+            text-align: center;
+            padding: 30px;
+            background: #eff6ff;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .loader {
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #4A90E2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            margin-top: 30px;
+            padding: 30px;
+            background: #f0fff4;
+            border-radius: 12px;
+            border-left: 4px solid #10b981;
+            display: none;
+        }
+
+        .results-section h3 {
+            color: #10b981;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .results-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            color: #1a1d23;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 10px;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-item h4 {
+            color: #4A90E2;
+            margin-bottom: 10px;
+        }
+
+        .result-detail {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .result-detail strong {
+            color: #6b7280;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            .header {
+                padding: 20px;
+            }
+            .logo {
+                font-size: 2rem;
+            }
+            .card {
+                padding: 20px;
+            }
+            .upload-area {
+                padding: 40px 20px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <div class="logo-section">
-                <h1 class="logo">LAB<span class="logo-blue">.</span></h1>
-                <p class="subtitle">Medicina Diagnóstica</p>
-            </div>
+            <h1 class="logo">LAB<span class="logo-blue">.</span></h1>
+            <p class="subtitle">Medicina Diagnóstica</p>
         </header>
 
-        <main class="main-content">
-            <div class="card">
-                <div class="card-header">
-                    <h2>Processamento de Arquivos XML</h2>
-                    <p class="description">Envie seus arquivos XML para processamento</p>
-                </div>
-
-                <div class="upload-section">
-                    <div class="upload-area" id="uploadArea">
-                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        <h3>Arraste seus arquivos XML aqui</h3>
-                        <p>ou clique para selecionar arquivos .xml</p>
-                        <input type="file" id="fileInput" accept=".xml,text/xml,application/xml" multiple hidden>
-                    </div>
-
-                    <div class="file-list" id="fileList"></div>
-                </div>
-
-                <div class="action-section">
-                    <button class="btn btn-primary" id="processBtn" disabled>
-                        <span class="btn-text">Processar Arquivos</span>
-                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="status-section" id="statusSection" style="display: none;">
-                    <div class="status-indicator">
-                        <div class="loader"></div>
-                        <p id="statusText">Processando...</p>
-                    </div>
-                </div>
-
-                <div class="results-section" id="resultsSection" style="display: none;">
-                    <h3>Resultados</h3>
-                    <div class="results-content" id="resultsContent"></div>
-                </div>
+        <div class="card">
+            <div class="card-header">
+                <h2>Processamento de Arquivos XML</h2>
+                <p class="description">Envie seus arquivos XML para processamento</p>
             </div>
-        </main>
+
+            <div class="upload-area" id="uploadArea">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <h3>Arraste seus arquivos XML aqui</h3>
+                <p>ou clique para selecionar arquivos .xml</p>
+                <input type="file" id="fileInput" accept=".xml" multiple style="display: none">
+            </div>
+
+            <div class="file-list" id="fileList"></div>
+
+            <div class="action-section">
+                <button class="btn" id="processBtn" disabled>Processar Arquivos</button>
+            </div>
+
+            <div class="status-section" id="statusSection">
+                <div class="loader"></div>
+                <p id="statusText">Processando...</p>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <h3>Resultados</h3>
+                <div class="results-content" id="resultsContent"></div>
+            </div>
+        </div>
 
         <footer class="footer">
             <p>&copy; 2024 LAB - Laboratório e Medicina Diagnóstica. Todos os direitos reservados.</p>
         </footer>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const processBtn = document.getElementById('processBtn');
+        const statusSection = document.getElementById('statusSection');
+        const statusText = document.getElementById('statusText');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContent = document.getElementById('resultsContent');
+
+        let files = [];
+
+        uploadArea.onclick = () => fileInput.click();
+        fileInput.onchange = (e) => addFiles(Array.from(e.target.files));
+
+        uploadArea.ondragover = (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        };
+
+        uploadArea.ondragleave = () => {
+            uploadArea.classList.remove('drag-over');
+        };
+
+        uploadArea.ondrop = (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            addFiles(Array.from(e.dataTransfer.files));
+        };
+
+        function addFiles(newFiles) {
+            const xmlFiles = newFiles.filter(f => f.name.toLowerCase().endsWith('.xml'));
+            
+            if (xmlFiles.length !== newFiles.length) {
+                alert('Apenas arquivos XML são aceitos!');
+            }
+
+            files = [...files, ...xmlFiles];
+            renderFiles();
+        }
+
+        function removeFile(index) {
+            files.splice(index, 1);
+            renderFiles();
+        }
+
+        function renderFiles() {
+            if (files.length === 0) {
+                fileList.innerHTML = '';
+                fileList.classList.remove('active');
+                processBtn.disabled = true;
+                return;
+            }
+
+            processBtn.disabled = false;
+            fileList.classList.add('active');
+            fileList.innerHTML = files.map((f, i) => `
+                <div class="file-item">
+                    <div class="file-info">
+                        <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                            <polyline points="13 2 13 9 20 9"></polyline>
+                        </svg>
+                        <div class="file-details">
+                            <h4>${f.name}</h4>
+                            <p>${(f.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                    </div>
+                    <button class="remove-btn" onclick="removeFile(${i})">Remover</button>
+                </div>
+            `).join('');
+        }
+
+        processBtn.onclick = async () => {
+            statusSection.style.display = 'block';
+            resultsSection.style.display = 'none';
+            processBtn.disabled = true;
+
+            const formData = new FormData();
+            files.forEach(f => formData.append('files', f));
+
+            try {
+                const response = await fetch('/api/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                statusSection.style.display = 'none';
+                resultsSection.style.display = 'block';
+                
+                if (data.success) {
+                    resultsContent.innerHTML = data.resultados.map(r => `
+                        <div class="result-item">
+                            <h4>📄 ${r.arquivo}</h4>
+                            <div class="result-detail">
+                                <strong>Total de guias:</strong>
+                                <span>${r.total_pacientes}</span>
+                            </div>
+                            ${r.pacientes ? r.pacientes.map(p => `
+                                <div style="margin-top: 15px; padding: 10px; background: #f9fafb; border-radius: 4px;">
+                                    <div class="result-detail">
+                                        <strong>Nº Guia:</strong>
+                                        <span>${p.guia || 'N/A'}</span>
+                                    </div>
+                                    <div class="result-detail">
+                                        <strong>Carteirinha:</strong>
+                                        <span>${p.carteirinha || 'N/A'}</span>
+                                    </div>
+                                    <div class="result-detail">
+                                        <strong>Lote:</strong>
+                                        <span>${p.lote || 'N/A'}</span>
+                                    </div>
+                                    <div class="result-detail">
+                                        <strong>Protocolo:</strong>
+                                        <span>${p.protocolo || 'N/A'}</span>
+                                    </div>
+                                    <div class="result-detail">
+                                        <strong>Status:</strong>
+                                        <span>${p.status}</span>
+                                    </div>
+                                </div>
+                            `).join('') : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    resultsContent.textContent = 'Erro: ' + (data.error || 'Erro desconhecido');
+                }
+                
+            } catch (error) {
+                statusSection.style.display = 'none';
+                resultsSection.style.display = 'block';
+                resultsSection.style.background = '#fee';
+                resultsSection.style.borderLeftColor = '#ef4444';
+                resultsContent.textContent = 'Erro: ' + error.message;
+            } finally {
+                processBtn.disabled = false;
+            }
+        };
+
+        window.removeFile = removeFile;
+        console.log('Sistema LAB inicializado ✓');
+    </script>
 </body>
 </html>
