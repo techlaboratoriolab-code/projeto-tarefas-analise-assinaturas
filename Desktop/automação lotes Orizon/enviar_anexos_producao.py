@@ -211,33 +211,29 @@ class ProcessadorXMLTISS:
         
         print(f"   📦 Lote: {numero_lote}")
         
-        # Busca por todos os tipos de guias possíveis no padrão TISS
-        tipos_guias = [
-            'guiaconsulta',
-            'guiasp-sadt', 
-            'guiasadt',
-            'guiaresumoInternacao',
-            'guiahonorariolndividual',
-            'guiatratamentoodontologico',
-            'guiaodontologia',
-            'guiainternacao'
-        ]
-        
+        # Busca TODAS as guias usando busca mais robusta
         guias_encontradas = []
         elementos_processados = set()
         
         # Itera por todos os elementos do XML
         for elem in root.iter():
-            # Remove namespace da tag
             tag_limpa = elem.tag.split('}')[1] if '}' in elem.tag else elem.tag
             tag_lower = tag_limpa.lower()
             
-            # Verifica se é um tipo de guia e se ainda não foi processado
-            for tipo_guia in tipos_guias:
-                if tipo_guia in tag_lower and id(elem) not in elementos_processados:
+            # Se a tag contém "guia" e tem filhos com dados de paciente
+            if 'guia' in tag_lower and id(elem) not in elementos_processados:
+                # Verifica se tem dados relevantes (numeroGuia ou numeroCarteira)
+                tem_dados = False
+                for child in elem.iter():
+                    child_tag = (child.tag.split('}')[1] if '}' in child.tag else child.tag).lower()
+                    if any(x in child_tag for x in ['numeroguia', 'numerocarteira', 'carteirinha']) and child.text and child.text.strip():
+                        tem_dados = True
+                        break
+                
+                if tem_dados:
                     guias_encontradas.append(elem)
                     elementos_processados.add(id(elem))
-                    break
+                    print(f"   🔍 Encontrada guia: {tag_limpa}")
         
         print(f"   ✓ Encontradas {len(guias_encontradas)} guia(s)")
         

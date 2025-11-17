@@ -172,33 +172,49 @@ class ProcessadorXMLTISS:
         # Extrai o número do lote
         numero_lote = self._extrair_texto(root, './/numeroLote', 'Número do lote')
         
-        # Busca por todos os tipos de guias possíveis no padrão TISS
-        tipos_guias = [
-            'guiaconsulta',
-            'guiasp-sadt', 
-            'guiasadt',
-            'guiaresumoInternacao',
-            'guiahonorariolndividual',
-            'guiatratamentoodontologico',
-            'guiaodontologia',
-            'guiainternacao'
+        # Debug: listar todas as tags do XML
+        tags_encontradas = []
+        for elem in root.iter():
+            tag_limpa = elem.tag.split('}')[1] if '}' in elem.tag else elem.tag
+            if tag_limpa not in tags_encontradas:
+                tags_encontradas.append(tag_limpa)
+        
+        # Busca TODAS as guias usando XPath mais robusto
+        guias_encontradas = []
+        
+        # Procura por padrões comuns de guias
+        padroes = [
+            './/*[contains(local-name(), "guia")]',
+            './/*[local-name()="guiaConsulta"]',
+            './/*[local-name()="guiaSP-SADT"]',
+            './/*[local-name()="guiaSADT"]',
+            './/*[local-name()="guiaResumoInternacao"]',
+            './/*[local-name()="guiaHonorarioIndividual"]',
+            './/*[local-name()="guiaTratamentoOdontologico"]',
+            './/*[local-name()="guiaOdontologia"]',
+            './/*[local-name()="guiaInternacao"]'
         ]
         
-        guias_encontradas = []
         elementos_processados = set()
         
-        # Itera por todos os elementos do XML
+        # Primeiro tenta com contains - mais abrangente
         for elem in root.iter():
-            # Remove namespace da tag
             tag_limpa = elem.tag.split('}')[1] if '}' in elem.tag else elem.tag
             tag_lower = tag_limpa.lower()
             
-            # Verifica se é um tipo de guia e se ainda não foi processado
-            for tipo_guia in tipos_guias:
-                if tipo_guia in tag_lower and id(elem) not in elementos_processados:
+            # Se a tag contém "guia" e tem filhos com dados de paciente
+            if 'guia' in tag_lower and id(elem) not in elementos_processados:
+                # Verifica se tem dados relevantes (numeroGuia ou numeroCarteira)
+                tem_dados = False
+                for child in elem.iter():
+                    child_tag = (child.tag.split('}')[1] if '}' in child.tag else child.tag).lower()
+                    if any(x in child_tag for x in ['numeroguia', 'numerocarteira', 'carteirinha']) and child.text and child.text.strip():
+                        tem_dados = True
+                        break
+                
+                if tem_dados:
                     guias_encontradas.append(elem)
                     elementos_processados.add(id(elem))
-                    break
         
         # Processa cada guia
         for guia in guias_encontradas:
