@@ -1,12 +1,22 @@
 {
-  "rewrites": [
+  "builds": [
     {
-      "source": "/api/process",
-      "destination": "/api/process.py"
+      "src": "api/**/*.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/process",
+      "dest": "/api/process.py"
     },
     {
-      "source": "/api/health",
-      "destination": "/api/health.py"
+      "src": "/api/health",
+      "dest": "/api/health.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }
