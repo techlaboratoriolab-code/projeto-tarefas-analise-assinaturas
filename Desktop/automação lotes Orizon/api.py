@@ -1,16 +1,22 @@
+from flask import Flask, request, jsonify
 import os
 import base64
 import hashlib
 import re
 from datetime import datetime
 from xml.etree import ElementTree as ET
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 import requests
 import time
 
 app = Flask(__name__)
-CORS(app)
+
+# CORS headers
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    return response
 
 class OrizonTISSEnvio:
     def __init__(self, codigo_prestador, login, senha, registro_ans="005711"):
@@ -138,7 +144,8 @@ class ProcessadorXMLTISS:
         self.xml_content = xml_content
         self.pacientes = []
         
-    def _extrair_texto(self, root, xpath, nome_campo=''):
+    def _extrair_texto(self, root, xpath):
+        """Extrai texto com ou sem namespace"""
         elementos = root.findall(xpath)
         if elementos and elementos[0].text:
             return elementos[0].text.strip()
@@ -150,17 +157,32 @@ class ProcessadorXMLTISS:
         except Exception as e:
             return {'error': f'Erro ao parsear XML: {str(e)}'}
         
-        numero_lote = self._extrair_texto(root, './/numeroLote')
-        numero_protocolo = self._extrair_texto(root, './/numeroProtocolo')
+        # Tenta extrair com namespace
+        numero_lote = self._extrair_texto(root, './/{http://www.ans.gov.br/padroes/tiss/schemas}numeroLote')
+        if not numero_lote:
+            numero_lote = self._extrair_texto(root, './/numeroLote')
         
-        guias = root.findall('.//guiasTISS')
+        numero_protocolo = self._extrair_texto(root, './/{http://www.ans.gov.br/padroes/tiss/schemas}numeroProtocolo')
+        if not numero_protocolo:
+            numero_protocolo = self._extrair_texto(root, './/numeroProtocolo')
+        
+        # Busca guias
+        guias = root.findall('.//{http://www.ans.gov.br/padroes/tiss/schemas}guiasTISS')
+        if not guias:
+            guias = root.findall('.//guiasTISS')
         
         for guia in guias:
-            numero_guia_prestador = self._extrair_texto(guia, './/numeroGuiaPrestador')
-            numero_guia_operadora = self._extrair_texto(guia, './/numeroGuiaOperadora')
+            numero_guia_prestador = self._extrair_texto(guia, './/{http://www.ans.gov.br/padroes/tiss/schemas}numeroGuiaPrestador')
+            if not numero_guia_prestador:
+                numero_guia_prestador = self._extrair_texto(guia, './/numeroGuiaPrestador')
             
-            # Carteirinha do beneficiário
-            carteirinha = self._extrair_texto(guia, './/numeroCarteira')
+            numero_guia_operadora = self._extrair_texto(guia, './/{http://www.ans.gov.br/padroes/tiss/schemas}numeroGuiaOperadora')
+            if not numero_guia_operadora:
+                numero_guia_operadora = self._extrair_texto(guia, './/numeroGuiaOperadora')
+            
+            carteirinha = self._extrair_texto(guia, './/{http://www.ans.gov.br/padroes/tiss/schemas}numeroCarteira')
+            if not carteirinha:
+                carteirinha = self._extrair_texto(guia, './/numeroCarteira')
             
             if not numero_guia_prestador:
                 continue
@@ -170,7 +192,7 @@ class ProcessadorXMLTISS:
                 'numeroProtocolo': numero_protocolo,
                 'numeroGuiaPrestador': numero_guia_prestador,
                 'numeroGuiaOperadora': numero_guia_operadora,
-                'numeroDocumento': numero_guia_prestador,  # Usa o número da guia como documento
+                'numeroDocumento': numero_guia_prestador,
                 'carteirinha': carteirinha
             }
             
@@ -179,15 +201,36 @@ class ProcessadorXMLTISS:
         return self.pacientes
 
 
-# Configurações (em produção, use variáveis de ambiente)
-CODIGO_PRESTADOR = "0000263036"
-LOGIN = "LAB0186"
-SENHA = "91a2ab8fbdd7884f7e32fd19694712a0"
-REGISTRO_ANS = "005711"
+# Configurações - usa variáveis de ambiente ou valores padrão
+CODIGO_PRESTADOR = os.environ.get('ORIZON_CODIGO_PRESTADOR', '0000263036')
+LOGIN = os.environ.get('ORIZON_LOGIN', 'LAB0186')
+SENHA = os.environ.get('ORIZON_SENHA', '91a2ab8fbdd7884f7e32fd19694712a0')
+REGISTRO_ANS = os.environ.get('ORIZON_REGISTRO_ANS', '005711')
 
 
-@app.route('/api/process', methods=['POST'])
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        'service': 'LAB TISS Processor API',
+        'version': '1.0.0',
+        'endpoints': {
+            'health': '/api/health',
+            'process': '/api/process (POST)'
+        }
+    })
+
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok', 'service': 'LAB TISS Processor'})
+
+
+@app.route('/api/process', methods=['POST', 'OPTIONS'])
 def process_xml():
+    # Handle preflight
+    if request.method == 'OPTIONS':
+        return '', 204
+    
     try:
         # Verifica se há arquivos
         if 'files' not in request.files:
@@ -223,27 +266,24 @@ def process_xml():
                 })
                 continue
             
-            # Inicializa cliente Orizon
-            cliente = OrizonTISSEnvio(CODIGO_PRESTADOR, LOGIN, SENHA, REGISTRO_ANS)
-            
             envios_resultado = []
             
-            # Para cada paciente, tenta enviar
-            # NOTA: Aqui você precisará fazer upload dos PDFs também
-            # Por enquanto, vou retornar apenas os dados extraídos
-            
+            # Para cada paciente extraído
             for pac in pacientes:
                 envios_resultado.append({
                     'guia': pac.get('numeroGuiaPrestador'),
                     'carteirinha': pac.get('carteirinha'),
                     'lote': pac.get('numeroLote'),
-                    'status': 'Extraído (aguardando PDF)'
+                    'protocolo': pac.get('numeroProtocolo'),
+                    'guiaOperadora': pac.get('numeroGuiaOperadora'),
+                    'status': '✓ Dados extraídos com sucesso'
                 })
             
             resultados.append({
                 'arquivo': file.filename,
                 'total_pacientes': len(pacientes),
-                'pacientes': envios_resultado
+                'pacientes': envios_resultado,
+                'mensagem': f'✓ XML processado! {len(pacientes)} guia(s) encontrada(s).'
             })
         
         return jsonify({
@@ -255,10 +295,7 @@ def process_xml():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/health', methods=['GET'])
-def health():
-    return jsonify({'status': 'ok', 'service': 'LAB TISS Processor'})
-
-
+# Handler para Vercel (serverless)
+# O Vercel procura por uma variável chamada 'app' ou uma função 'handler'
 if __name__ == '__main__':
     app.run(debug=True)
