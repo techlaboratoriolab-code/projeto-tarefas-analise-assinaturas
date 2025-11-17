@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LAB - Sistema de Processamento</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo-section">
+                <h1 class="logo">LAB<span class="logo-blue">.</span></h1>
+                <p class="subtitle">Medicina Diagnóstica</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Processamento de Arquivos XML</h2>
+                    <p class="description">Envie seus arquivos XML para processamento</p>
+                </div>
+
+                <div class="upload-section">
+                    <div class="upload-area" id="uploadArea">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <h3>Arraste seus arquivos XML aqui</h3>
+                        <p>ou clique para selecionar arquivos .xml</p>
+                        <input type="file" id="fileInput" accept=".xml,text/xml,application/xml" multiple hidden>
+                    </div>
+
+                    <div class="file-list" id="fileList"></div>
+                </div>
+
+                <div class="action-section">
+                    <button class="btn btn-primary" id="processBtn" disabled>
+                        <span class="btn-text">Processar Arquivos</span>
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="status-section" id="statusSection" style="display: none;">
+                    <div class="status-indicator">
+                        <div class="loader"></div>
+                        <p id="statusText">Processando...</p>
+                    </div>
+                </div>
+
+                <div class="results-section" id="resultsSection" style="display: none;">
+                    <h3>Resultados</h3>
+                    <div class="results-content" id="resultsContent"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 LAB - Laboratório e Medicina Diagnóstica. Todos os direitos reservados.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
