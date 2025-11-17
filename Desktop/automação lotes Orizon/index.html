@@ -3,7 +3,294 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LAB - Envio Anexos Orizon</title>
+    <title>LAB - Envio Anexos TISS Orizon</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .upload-section {
+            margin-bottom: 20px;
+        }
+        .upload-box {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8f9ff;
+            margin-bottom: 15px;
+        }
+        .upload-box:hover {
+            background: #f0f2ff;
+        }
+        .upload-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .file-info {
+            padding: 10px;
+            background: #e8ebff;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+        .file-info.active { display: block; }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        .loading.active { display: block; }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .results {
+            margin-top: 20px;
+            display: none;
+        }
+        .results.active { display: block; }
+        .result-header {
+            padding: 15px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .result-header.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .result-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+        .result-item.error {
+            border-left-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 LAB - Envio Anexos TISS</h1>
+        <p class="subtitle">Sistema de envio automático para Orizon</p>
+        
+        <div class="upload-section">
+            <div class="upload-box" id="xmlUpload">
+                <h3>📄 XML do Lote</h3>
+                <p>Clique para selecionar o arquivo XML TISS</p>
+                <input type="file" id="xmlFile" accept=".xml" hidden>
+            </div>
+            <div class="file-info" id="xmlInfo"></div>
+        </div>
+        
+        <div class="upload-section">
+            <div class="upload-box" id="pdfsUpload">
+                <h3>📎 PDFs das Guias</h3>
+                <p>Selecione todos os PDFs das guias</p>
+                <input type="file" id="pdfsFiles" accept=".pdf" multiple hidden>
+            </div>
+            <div class="file-info" id="pdfsInfo"></div>
+        </div>
+        
+        <button class="btn" id="btnProcessar" disabled>Processar e Enviar</button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p id="loadingText">Processando...</p>
+        </div>
+        
+        <div class="results" id="results"></div>
+    </div>
+    
+    <script>
+        const xmlUpload = document.getElementById('xmlUpload');
+        const xmlFile = document.getElementById('xmlFile');
+        const xmlInfo = document.getElementById('xmlInfo');
+        const pdfsUpload = document.getElementById('pdfsUpload');
+        const pdfsFiles = document.getElementById('pdfsFiles');
+        const pdfsInfo = document.getElementById('pdfsInfo');
+        const btnProcessar = document.getElementById('btnProcessar');
+        const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loadingText');
+        const results = document.getElementById('results');
+        
+        let selectedXml = null;
+        let selectedPdfs = [];
+        
+        xmlUpload.addEventListener('click', () => xmlFile.click());
+        pdfsUpload.addEventListener('click', () => pdfsFiles.click());
+        
+        xmlFile.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedXml = e.target.files[0];
+                xmlInfo.innerHTML = `✓ ${selectedXml.name}`;
+                xmlInfo.classList.add('active');
+                checkReady();
+            }
+        });
+        
+        pdfsFiles.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedPdfs = Array.from(e.target.files);
+                pdfsInfo.innerHTML = `✓ ${selectedPdfs.length} arquivo(s) selecionado(s)`;
+                pdfsInfo.classList.add('active');
+                checkReady();
+            }
+        });
+        
+        function checkReady() {
+            btnProcessar.disabled = !(selectedXml && selectedPdfs.length > 0);
+        }
+        
+        btnProcessar.addEventListener('click', async () => {
+            loading.classList.add('active');
+            results.classList.remove('active');
+            btnProcessar.disabled = true;
+            
+            try {
+                loadingText.textContent = 'Lendo XML...';
+                const xmlContent = await readFileAsText(selectedXml);
+                
+                loadingText.textContent = 'Convertendo PDFs...';
+                const pdfsDict = {};
+                for (let pdf of selectedPdfs) {
+                    const base64 = await readFileAsBase64(pdf);
+                    pdfsDict[pdf.name] = base64.split(',')[1]; // Remove data:application/pdf;base64,
+                }
+                
+                loadingText.textContent = 'Enviando para processamento...';
+                const response = await fetch('/api/enviar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        xml_content: xmlContent,
+                        pdfs: pdfsDict
+                    })
+                });
+                
+                const result = await response.json();
+                
+                loading.classList.remove('active');
+                results.classList.add('active');
+                
+                if (result.success) {
+                    let html = `
+                        <div class="result-header">
+                            <strong>✅ Processamento Concluído!</strong><br>
+                            Total: ${result.total} | Sucessos: ${result.sucessos} | Falhas: ${result.falhas}
+                        </div>
+                    `;
+                    
+                    result.resultados.forEach((r, i) => {
+                        const pac = r.paciente;
+                        const classe = r.success ? '' : 'error';
+                        const icone = r.success ? '✅' : '❌';
+                        html += `
+                            <div class="result-item ${classe}">
+                                ${icone} <strong>Guia ${pac.numeroGuiaPrestador}</strong><br>
+                                Carteirinha: ${pac.carteirinha || 'N/A'} | ${r.status}
+                            </div>
+                        `;
+                    });
+                    
+                    results.innerHTML = html;
+                } else {
+                    results.innerHTML = `
+                        <div class="result-header error">
+                            <strong>❌ Erro:</strong> ${result.error}
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                loading.classList.remove('active');
+                results.classList.add('active');
+                results.innerHTML = `
+                    <div class="result-header error">
+                        <strong>❌ Erro:</strong> ${error.message}
+                    </div>
+                `;
+            } finally {
+                btnProcessar.disabled = false;
+            }
+        });
+        
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+        
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+    </script>
+</body>
+</html>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
