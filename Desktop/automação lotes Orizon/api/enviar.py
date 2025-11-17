@@ -174,22 +174,31 @@ class ProcessadorXMLTISS:
         
         # Busca por todos os tipos de guias possíveis no padrão TISS
         tipos_guias = [
-            'guiaConsulta',
-            'guiaSP-SADT', 
-            'guiaSADT',
-            'guiaResumoInternacao',
-            'guiaHonorarioIndividual',
-            'guiaTratamentoOdontologico',
-            'guiaOdontologia',
-            'guiaInternacao'
+            'guiaconsulta',
+            'guiasp-sadt', 
+            'guiasadt',
+            'guiaresumoInternacao',
+            'guiahonorariolndividual',
+            'guiatratamentoodontologico',
+            'guiaodontologia',
+            'guiainternacao'
         ]
         
         guias_encontradas = []
+        elementos_processados = set()
         
-        for tipo_guia in tipos_guias:
-            for elem in root.iter():
-                if tipo_guia.lower() in elem.tag.lower():
+        # Itera por todos os elementos do XML
+        for elem in root.iter():
+            # Remove namespace da tag
+            tag_limpa = elem.tag.split('}')[1] if '}' in elem.tag else elem.tag
+            tag_lower = tag_limpa.lower()
+            
+            # Verifica se é um tipo de guia e se ainda não foi processado
+            for tipo_guia in tipos_guias:
+                if tipo_guia in tag_lower and id(elem) not in elementos_processados:
                     guias_encontradas.append(elem)
+                    elementos_processados.add(id(elem))
+                    break
         
         # Processa cada guia
         for guia in guias_encontradas:
