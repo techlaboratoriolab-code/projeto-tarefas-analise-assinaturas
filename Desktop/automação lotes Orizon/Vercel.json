@@ -1,18 +1,14 @@
 {
   "builds": [
     {
-      "src": "api/**/*.py",
+      "src": "api/enviar.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
-      "src": "/api/process",
-      "dest": "/api/process.py"
-    },
-    {
-      "src": "/api/health",
-      "dest": "/api/health.py"
+      "src": "/api/enviar",
+      "dest": "/api/enviar.py"
     },
     {
       "src": "/(.*)",
